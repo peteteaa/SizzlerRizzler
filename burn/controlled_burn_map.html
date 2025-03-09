@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_7bcccb646cd0b12aac6b2c76894b7ece {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+</head>
+<body>
+    
+    
+            <h3 align="center" style="font-size:16px"><b>Controlled Burn Suitability Map</b></h3>
+        
+    
+            <div class="folium-map" id="map_7bcccb646cd0b12aac6b2c76894b7ece" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_7bcccb646cd0b12aac6b2c76894b7ece = L.map(
+                "map_7bcccb646cd0b12aac6b2c76894b7ece",
+                {
+                    center: [39.511919999999996, -121.16507999999999],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 6,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_9b9eb0f6f05ce9c93a14658ef2caa37a = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 20,
+  "maxNativeZoom": 20,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"https://carto.com/attributions\"\u003eCARTO\u003c/a\u003e",
+  "subdomains": "abcd",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_9b9eb0f6f05ce9c93a14658ef2caa37a.addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var marker_3776ffdffff4326045b67cc5f6167354 = L.marker(
+                [38.4762, -119.8547],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_049cf7e33352cce75de5b39e88ff042f = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "fire",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_3bbf03d69b21c6a3c3a0aafe1838224e = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_6dc5985120ece26916a4974c8aea6dc5 = $(`<div id="html_6dc5985120ece26916a4974c8aea6dc5" style="width: 100.0%; height: 100.0%;">             <b>Location 1</b><br>             Coordinates: 38.4762, -119.8547<br>             Date: 2023-04-01 00:00:00<br>             Score: 0.70<br>             Reason: Good conditions due to suitable temperature, high precipitation, and moderate vegetation, but lack of humidity and wind speed data prevents ideal conditions.             </div>`)[0];
+                popup_3bbf03d69b21c6a3c3a0aafe1838224e.setContent(html_6dc5985120ece26916a4974c8aea6dc5);
+            
+        
+
+        marker_3776ffdffff4326045b67cc5f6167354.bindPopup(popup_3bbf03d69b21c6a3c3a0aafe1838224e)
+        ;
+
+        
+    
+    
+                marker_3776ffdffff4326045b67cc5f6167354.setIcon(icon_049cf7e33352cce75de5b39e88ff042f);
+            
+    
+            var circle_fb9745b0024474451a7960a5782c0b25 = L.circle(
+                [38.4762, -119.8547],
+                {"bubblingMouseEvents": true, "color": "green", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "green", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 5000, "stroke": true, "weight": 3}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var marker_f04fbfd01c7d70f51829806d4ab92de5 = L.marker(
+                [40.4427, -121.4206],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_6f2c50d1dd377f25e96580025fb9fcae = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "fire",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_4a4ae9ed867943d2e4f4f2760abbb80f = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_79b50dcee1ff6f5fb0eb071f25c870ea = $(`<div id="html_79b50dcee1ff6f5fb0eb071f25c870ea" style="width: 100.0%; height: 100.0%;">             <b>Location 2</b><br>             Coordinates: 40.4427, -121.4206<br>             Date: 2023-05-01 00:00:00<br>             Score: 0.70<br>             Reason: The temperature is slightly low, but the high precipitation and moderate fuel load make it a good day for a controlled burn. Assuming humidity and wind speed are within ideal ranges, conditions are suitable for a controlled burn.             </div>`)[0];
+                popup_4a4ae9ed867943d2e4f4f2760abbb80f.setContent(html_79b50dcee1ff6f5fb0eb071f25c870ea);
+            
+        
+
+        marker_f04fbfd01c7d70f51829806d4ab92de5.bindPopup(popup_4a4ae9ed867943d2e4f4f2760abbb80f)
+        ;
+
+        
+    
+    
+                marker_f04fbfd01c7d70f51829806d4ab92de5.setIcon(icon_6f2c50d1dd377f25e96580025fb9fcae);
+            
+    
+            var circle_00e65da27e57aaf1f1c004a1bbc87bd9 = L.circle(
+                [40.4427, -121.4206],
+                {"bubblingMouseEvents": true, "color": "green", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "green", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 5000, "stroke": true, "weight": 3}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var marker_71f8d38e61c52322336181177173b7dd = L.marker(
+                [38.7545, -120.0324],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_eda574bd0d36df98194b0869f256043e = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "fire",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_b1e875aaa3ba0fc764c93a86679ce308 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_49c3aeaf6ade55be2c85f91f4270e30c = $(`<div id="html_49c3aeaf6ade55be2c85f91f4270e30c" style="width: 100.0%; height: 100.0%;">             <b>Location 3</b><br>             Coordinates: 38.7545, -120.0324<br>             Date: 2023-05-01 00:00:00<br>             Score: 0.80<br>             Reason: Good conditions for a controlled burn, with a suitable temperature and recent precipitation, although humidity and wind speed data are missing.             </div>`)[0];
+                popup_b1e875aaa3ba0fc764c93a86679ce308.setContent(html_49c3aeaf6ade55be2c85f91f4270e30c);
+            
+        
+
+        marker_71f8d38e61c52322336181177173b7dd.bindPopup(popup_b1e875aaa3ba0fc764c93a86679ce308)
+        ;
+
+        
+    
+    
+                marker_71f8d38e61c52322336181177173b7dd.setIcon(icon_eda574bd0d36df98194b0869f256043e);
+            
+    
+            var circle_ab469bed58af7e40211268b4398a6898 = L.circle(
+                [38.7545, -120.0324],
+                {"bubblingMouseEvents": true, "color": "green", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "green", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 5000, "stroke": true, "weight": 3}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var marker_a03d04046be69d12d3a6ca3ce272f059 = L.marker(
+                [40.0689, -122.9714],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_4bb3693bcb73167355c5ff748421593e = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "fire",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_0a094ff0f6f286509c41d95a200cde6d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_6afa0fc606948d51b7c739213675ddfd = $(`<div id="html_6afa0fc606948d51b7c739213675ddfd" style="width: 100.0%; height: 100.0%;">             <b>Location 4</b><br>             Coordinates: 40.0689, -122.9714<br>             Date: 2023-05-01 00:00:00<br>             Score: 0.80<br>             Reason: Good conditions for a controlled burn, with suitable temperature and recent precipitation, although humidity and wind speed data are missing.             </div>`)[0];
+                popup_0a094ff0f6f286509c41d95a200cde6d.setContent(html_6afa0fc606948d51b7c739213675ddfd);
+            
+        
+
+        marker_a03d04046be69d12d3a6ca3ce272f059.bindPopup(popup_0a094ff0f6f286509c41d95a200cde6d)
+        ;
+
+        
+    
+    
+                marker_a03d04046be69d12d3a6ca3ce272f059.setIcon(icon_4bb3693bcb73167355c5ff748421593e);
+            
+    
+            var circle_0e9e417c72858529129abf620625dace = L.circle(
+                [40.0689, -122.9714],
+                {"bubblingMouseEvents": true, "color": "green", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "green", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 5000, "stroke": true, "weight": 3}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var marker_de637974a69ff591d481ba5e11ed0139 = L.marker(
+                [39.8173, -121.5463],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_c78b4fb80b9ac2c6c5e65f2e480ee3ba = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "fire",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_b49358104fa9988ccc80d4df3b62bd00 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_2ba85e16aac0012c9a9ac1163fc52b1b = $(`<div id="html_2ba85e16aac0012c9a9ac1163fc52b1b" style="width: 100.0%; height: 100.0%;">             <b>Location 5</b><br>             Coordinates: 39.8173, -121.5463<br>             Date: 2023-05-01 00:00:00<br>             Score: 0.80<br>             Reason: Good conditions for a controlled burn, with moderate temperature, high precipitation, and moderate vegetation fuel load.             </div>`)[0];
+                popup_b49358104fa9988ccc80d4df3b62bd00.setContent(html_2ba85e16aac0012c9a9ac1163fc52b1b);
+            
+        
+
+        marker_de637974a69ff591d481ba5e11ed0139.bindPopup(popup_b49358104fa9988ccc80d4df3b62bd00)
+        ;
+
+        
+    
+    
+                marker_de637974a69ff591d481ba5e11ed0139.setIcon(icon_c78b4fb80b9ac2c6c5e65f2e480ee3ba);
+            
+    
+            var circle_4173422c22ebd64bb7c90ad5a6fc6dff = L.circle(
+                [39.8173, -121.5463],
+                {"bubblingMouseEvents": true, "color": "green", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "green", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 5000, "stroke": true, "weight": 3}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var marker_b4f78bb39e1133d9a3312f375511e52d = L.marker(
+                [37.7461, -119.5332],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_d1e6e92313c78a8b8586c26425f86d60 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "tree",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_9c77f5276ed3625223c57d9ffb0c9ef7 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_bf7b422e791621b721c2811f8823ba82 = $(`<div id="html_bf7b422e791621b721c2811f8823ba82" style="width: 100.0%; height: 100.0%;">Yosemite Valley - Potential burn target</div>`)[0];
+                popup_9c77f5276ed3625223c57d9ffb0c9ef7.setContent(html_bf7b422e791621b721c2811f8823ba82);
+            
+        
+
+        marker_b4f78bb39e1133d9a3312f375511e52d.bindPopup(popup_9c77f5276ed3625223c57d9ffb0c9ef7)
+        ;
+
+        
+    
+    
+                marker_b4f78bb39e1133d9a3312f375511e52d.setIcon(icon_d1e6e92313c78a8b8586c26425f86d60);
+            
+    
+            var marker_c7f437b16e837b8afd1c45e976f94686 = L.marker(
+                [37.897, -122.581],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_ab1193428b20e6af11653e8ba5f43cd6 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "tree",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_934f763da367bd41f6ebfd96dcb237da = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_85652cb96fc254355b5fed50e68be240 = $(`<div id="html_85652cb96fc254355b5fed50e68be240" style="width: 100.0%; height: 100.0%;">Muir Woods - Potential burn target</div>`)[0];
+                popup_934f763da367bd41f6ebfd96dcb237da.setContent(html_85652cb96fc254355b5fed50e68be240);
+            
+        
+
+        marker_c7f437b16e837b8afd1c45e976f94686.bindPopup(popup_934f763da367bd41f6ebfd96dcb237da)
+        ;
+
+        
+    
+    
+                marker_c7f437b16e837b8afd1c45e976f94686.setIcon(icon_ab1193428b20e6af11653e8ba5f43cd6);
+            
+    
+            var marker_a45447f5e6aea240babdbff7a88b7492 = L.marker(
+                [38.04, -122.9],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_8005b2a191b4c0e961c3ce77030df704 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "tree",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_d1c48943b2d48b66b576143a326f96ee = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_989661a71bc6f4a660f3afbca71386be = $(`<div id="html_989661a71bc6f4a660f3afbca71386be" style="width: 100.0%; height: 100.0%;">Point Reyes - Potential burn target</div>`)[0];
+                popup_d1c48943b2d48b66b576143a326f96ee.setContent(html_989661a71bc6f4a660f3afbca71386be);
+            
+        
+
+        marker_a45447f5e6aea240babdbff7a88b7492.bindPopup(popup_d1c48943b2d48b66b576143a326f96ee)
+        ;
+
+        
+    
+    
+                marker_a45447f5e6aea240babdbff7a88b7492.setIcon(icon_8005b2a191b4c0e961c3ce77030df704);
+            
+    
+            var marker_985c3d0844086bd84b2a3edf6198bb71 = L.marker(
+                [37.9235, -122.5965],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_279717a91c33116f025a0903b1e1bed6 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "tree",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_0da1dec9caddc4c56920673f0e6c7604 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_00fe4ae7380cd9d0febf532f8409bd65 = $(`<div id="html_00fe4ae7380cd9d0febf532f8409bd65" style="width: 100.0%; height: 100.0%;">Mount Tamalpais - Potential burn target</div>`)[0];
+                popup_0da1dec9caddc4c56920673f0e6c7604.setContent(html_00fe4ae7380cd9d0febf532f8409bd65);
+            
+        
+
+        marker_985c3d0844086bd84b2a3edf6198bb71.bindPopup(popup_0da1dec9caddc4c56920673f0e6c7604)
+        ;
+
+        
+    
+    
+                marker_985c3d0844086bd84b2a3edf6198bb71.setIcon(icon_279717a91c33116f025a0903b1e1bed6);
+            
+    
+            var marker_a407a0c997fed37dd19d79cfbe2cbabe = L.marker(
+                [37.8608, -122.4326],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_cadf007d6a5227985b464d196043b5f5 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "tree",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_fcb035120ef0d69dd8ac7cacbed11e86 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_f2bb277027a07f31bbb030cc80eb6104 = $(`<div id="html_f2bb277027a07f31bbb030cc80eb6104" style="width: 100.0%; height: 100.0%;">Angel Island - Potential burn target</div>`)[0];
+                popup_fcb035120ef0d69dd8ac7cacbed11e86.setContent(html_f2bb277027a07f31bbb030cc80eb6104);
+            
+        
+
+        marker_a407a0c997fed37dd19d79cfbe2cbabe.bindPopup(popup_fcb035120ef0d69dd8ac7cacbed11e86)
+        ;
+
+        
+    
+    
+                marker_a407a0c997fed37dd19d79cfbe2cbabe.setIcon(icon_cadf007d6a5227985b464d196043b5f5);
+            
+    
+            var marker_57cefc1bf033884a07b2cdacecd02ee1 = L.marker(
+                [37.8817, -121.9142],
+                {
+}
+            ).addTo(map_7bcccb646cd0b12aac6b2c76894b7ece);
+        
+    
+            var icon_eb8e6bcf538d516818ffae18b57d71af = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "orange",
+  "iconColor": "white",
+  "icon": "tree",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_fee7e953c475f3b24ae424328e3b5789 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_b8702a1b3d65ea29b8f56c658b20b3d8 = $(`<div id="html_b8702a1b3d65ea29b8f56c658b20b3d8" style="width: 100.0%; height: 100.0%;">Mount Diablo - Potential burn target</div>`)[0];
+                popup_fee7e953c475f3b24ae424328e3b5789.setContent(html_b8702a1b3d65ea29b8f56c658b20b3d8);
+            
+        
+
+        marker_57cefc1bf033884a07b2cdacecd02ee1.bindPopup(popup_fee7e953c475f3b24ae424328e3b5789)
+        ;
+
+        
+    
+    
+                marker_57cefc1bf033884a07b2cdacecd02ee1.setIcon(icon_eb8e6bcf538d516818ffae18b57d71af);
+            
+</script>
+</html>
