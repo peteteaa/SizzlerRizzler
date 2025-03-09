@@ -5,322 +5,293 @@ from datetime import datetime, timedelta
 import time
 import numpy as np
 from tqdm import tqdm
+import logging
+from typing import Dict, List
+import json
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class NOAADataFetcher:
     """
-    A class to fetch, process, and save NOAA climate data for San Francisco for 2023.
+    Fetches weather data from NOAA API for San Francisco Bay Area,
+    including temperature, precipitation, wind speed, wind direction, and relative humidity.
     """
     
-    def __init__(self, api_key):
-        """
-        Initialize the fetcher with API key and San Francisco bounding box.
+    def __init__(self):
+        """Initialize the NOAA data fetcher"""
+        self.api_key = os.getenv('NOAA_API_KEY')
+        if not self.api_key:
+            raise ValueError("NOAA_API_KEY environment variable not set")
+            
+        self.base_url = "https://www.ncdc.noaa.gov/cdo-web/api/v2"
+        self.headers = {'token': self.api_key}
         
-        Args:
-            api_key (str): Your NOAA API key
-        """
-        self.api_key = api_key
-        self.base_url = "https://www.ncdc.noaa.gov/cdo-web/api/v2/"
-        self.headers = {"token": api_key}
+        # Expanded Bay Area bounding box
+        self.sf_bbox = {
+            "minlat": 37.2,  # Expanded south to include more of the Bay Area
+            "minlon": -122.8,  # Expanded west
+            "maxlat": 38.2,  # Expanded north
+            "maxlon": -122.0  # Expanded east
+        }
         
-        # San Francisco bounding box (minlat, minlon, maxlat, maxlon)
-        # This covers the city and immediate surrounding areas
-        self.sf_bbox = {"minlat": 37.70, "minlon": -122.51, "maxlat": 37.83, "maxlon": -122.35}
-        
-        # Create data directory if it doesn't exist
+        # Create data directory
         os.makedirs("data/weather", exist_ok=True)
         
-    def fetch_stations(self):
-        """
-        Fetch all weather stations in San Francisco.
+    def _make_request(self, endpoint: str, params: Dict, max_retries: int = 3, retry_delay: int = 5) -> requests.Response:
+        """Make a request to the NOAA API with retry logic"""
+        url = f"{self.base_url}/{endpoint}"
         
-        Returns:
-            list: List of station metadata dictionaries
-        """
-        print("Fetching San Francisco weather stations...")
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, headers=self.headers, params=params)
+                if response.status_code == 200:
+                    return response
+                elif response.status_code == 503:
+                    logger.warning(f"Service unavailable (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    continue
+                else:
+                    response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                if attempt == max_retries - 1:
+                    raise Exception(f"Failed after {max_retries} attempts: {str(e)}")
+                logger.warning(f"Request failed (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
         
-        stations = []
-        offset = 1
-        limit = 1000
+        raise Exception(f"Failed after {max_retries} attempts")
+
+    def _get_stations(self) -> List[Dict]:
+        """Get list of NOAA stations in San Francisco Bay Area"""
+        # Search for stations with temperature and dew point data
+        params = {
+            'extent': f'{self.sf_bbox["minlat"]},{self.sf_bbox["minlon"]},{self.sf_bbox["maxlat"]},{self.sf_bbox["maxlon"]}',
+            'datasetid': 'GHCND',
+            'datacategoryid': ['TEMP', 'WIND'],  # Temperature includes dew point
+            'startdate': '2023-01-01',
+            'enddate': '2023-12-31',
+            'limit': 1000
+        }
         
-        while True:
+        response = self._make_request('stations', params)
+        stations = response.json().get('results', [])
+        logger.info(f"Found {len(stations)} stations in Bay Area with temperature and wind data")
+        
+        # Filter for stations that have recent data
+        valid_stations = []
+        for station in stations:
             params = {
-                "extent": f"{self.sf_bbox['minlat']},{self.sf_bbox['minlon']},{self.sf_bbox['maxlat']},{self.sf_bbox['maxlon']}",
-                "datasetid": "GHCND",  # Global Historical Climatology Network Daily
-                "limit": limit,
-                "offset": offset
+                'datasetid': 'GHCND',
+                'stationid': station['id'],
+                'startdate': '2023-01-01',  # Check if station has recent data
+                'enddate': '2023-12-31',
+                'limit': 1
             }
             
-            response = requests.get(f"{self.base_url}stations", headers=self.headers, params=params)
+            response = self._make_request('data', params)
+            if response.status_code == 200 and response.json().get('results'):
+                valid_stations.append(station)
+            time.sleep(0.5)  # Rate limiting
             
-            if response.status_code != 200:
-                print(f"Error fetching stations: {response.text}")
-                break
-            
-            data = response.json()
-            if "results" not in data or len(data["results"]) == 0:
-                break
-                
-            stations.extend(data["results"])
-            offset += limit
-            
-            # Sleep to avoid hitting rate limits
-            time.sleep(0.5)
-        
-        print(f"Found {len(stations)} stations in San Francisco")
-        return stations
+        logger.info(f"Found {len(valid_stations)} stations with recent data")
+        return valid_stations
     
-    def fetch_data_for_station(self, station_id, start_date, end_date):
-        """
-        Fetch temperature and precipitation data for a specific station and date range.
-        
-        Args:
-            station_id (str): The station ID
-            start_date (str): Start date in format 'YYYY-MM-DD'
-            end_date (str): End date in format 'YYYY-MM-DD'
-            
-        Returns:
-            pandas.DataFrame: Data for the station
-        """
-        params = {
-            "datasetid": "GHCND",
-            "stationid": station_id,
-            "startdate": start_date,
-            "enddate": end_date,
-            "datatypeid": "TMAX,TMIN,PRCP",  # Max temp, Min temp, Precipitation
-            "units": "standard",  # Use Fahrenheit for temp, inches for precip
-            "limit": 1000
-        }
+    def _fetch_data(self, station_id: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """Fetch data for a specific station and date range"""
+        # Split date range into yearly chunks
+        start = pd.to_datetime(start_date)
+        end = pd.to_datetime(end_date)
         
         all_data = []
-        offset = 1
+        current_start = start
         
-        while True:
-            params["offset"] = offset
-            response = requests.get(f"{self.base_url}data", headers=self.headers, params=params)
+        while current_start < end:
+            current_end = min(
+                current_start + pd.DateOffset(years=1) - pd.DateOffset(days=1),
+                end
+            )
             
-            if response.status_code != 200:
-                print(f"Error fetching data for station {station_id}: {response.text}")
-                break
+            # First try with all data types
+            datatypes = ['TMAX', 'TMIN', 'PRCP', 'AWND', 'WDF2']  
+            params = {
+                'datasetid': 'GHCND',
+                'stationid': station_id,
+                'startdate': current_start.strftime('%Y-%m-%d'),
+                'enddate': current_end.strftime('%Y-%m-%d'),
+                'datatypeid': datatypes,
+                'limit': 1000,
+                'units': 'metric'
+            }
             
-            data = response.json()
-            if "results" not in data or len(data["results"]) == 0:
-                break
-                
-            all_data.extend(data["results"])
-            if len(data["results"]) < params["limit"]:
-                break
-                
-            offset += params["limit"]
+            retry_count = 0
+            max_retries = 3
             
-            # Sleep to avoid hitting rate limits
-            time.sleep(0.5)
-        
-        if not all_data:
-            return pd.DataFrame()
-        
-        # Convert to DataFrame
-        df = pd.DataFrame(all_data)
-        return df
+            while retry_count < max_retries:
+                try:
+                    response = self._make_request('data', params)
+                    if response.status_code == 200:
+                        data = response.json()
+                        chunk_data = data.get('results', [])
+                        if chunk_data:
+                            all_data.extend(chunk_data)
+                            
+                            # Check if we need to fetch more pages
+                            while 'metadata' in data and len(chunk_data) >= 1000:
+                                params['offset'] = len(chunk_data)
+                                time.sleep(0.5)  # Rate limiting
+                                response = self._make_request('data', params)
+                                if response.status_code == 200:
+                                    data = response.json()
+                                    chunk_data = data.get('results', [])
+                                    if chunk_data:
+                                        all_data.extend(chunk_data)
+                                    else:
+                                        break
+                                else:
+                                    break
+                        break
+                    elif response.status_code == 503:
+                        logger.warning(f"Service temporarily unavailable, retrying in 5 seconds...")
+                        time.sleep(5)
+                        retry_count += 1
+                    else:
+                        logger.error(f"Failed to fetch data: {response.text}")
+                        break
+                except Exception as e:
+                    logger.error(f"Error fetching data: {str(e)}")
+                    retry_count += 1
+                    time.sleep(5)
+            
+            current_start = current_end + pd.DateOffset(days=1)
+            
+        return pd.DataFrame(all_data) if all_data else pd.DataFrame()
     
-    def fetch_all_data(self, year=2023):
-        """
-        Fetch data for all stations in San Francisco for 2023.
+    def fetch_and_process(self) -> None:
+        """Main method to fetch and process all weather data"""
+        logger.info("Starting NOAA data fetch process...")
         
-        Args:
-            year (int): Year to fetch data for (default: 2023)
-            
-        Returns:
-            pandas.DataFrame: Raw data from all stations
-            dict: Station coordinate information
-        """
-        stations = self.fetch_stations()
+        # Get available stations
+        stations = self._get_stations()
+        logger.info(f"Found {len(stations)} NOAA stations in Bay Area with required data")
         
-        # Extract station coordinates
-        station_coords = {
-            station["id"]: {
-                "name": station["name"],
-                "latitude": station["latitude"],
-                "longitude": station["longitude"]
-            } 
-            for station in stations
-        }
-        
-        start_date = f"{year}-01-01"
-        end_date = f"{year}-12-31"
-        
-        print(f"Fetching San Francisco weather data for {year}...")
-        
+        # Fetch data for each station
         all_data = []
-        for station in tqdm(stations):
-            station_id = station["id"]
-            df = self.fetch_data_for_station(station_id, start_date, end_date)
+        for station in tqdm(stations, desc="Fetching station data"):
+            df = self._fetch_data(
+                station['id'],
+                '2023-01-01',
+                '2023-12-31'
+            )
             
             if not df.empty:
-                # Add station coordinates
-                df["latitude"] = station["latitude"]
-                df["longitude"] = station["longitude"]
+                df['latitude'] = station['latitude']
+                df['longitude'] = station['longitude']
                 all_data.append(df)
         
-        # Combine all station data
         if not all_data:
-            raise ValueError("No data was retrieved. Check API key or try different stations.")
-            
-        full_df = pd.concat(all_data, ignore_index=True)
-        return full_df, station_coords
-    
-    def process_data(self, df, station_coords):
-        """
-        Process the raw NOAA data into a clean format with daily values.
+            raise Exception("No data fetched from any station")
         
-        Args:
-            df (pandas.DataFrame): Raw NOAA data
-            station_coords (dict): Dictionary of station coordinates
-            
-        Returns:
-            pandas.DataFrame: Processed daily data
-        """
-        print("Processing data...")
+        # Combine all station data
+        df = pd.concat(all_data, ignore_index=True)
         
-        # Extract date from 'date' column
+        # Convert to wide format
         df['date'] = pd.to_datetime(df['date'])
+        df_wide = df.pivot_table(
+            index=['date', 'latitude', 'longitude'],
+            columns='datatype',
+            values='value'
+        ).reset_index()
         
-        # Create separate dataframes for each data type
-        tmax_df = df[df['datatype'] == 'TMAX'].copy()
-        tmin_df = df[df['datatype'] == 'TMIN'].copy()
-        prcp_df = df[df['datatype'] == 'PRCP'].copy()
-        
-        # Rename 'value' column to the respective measurement
-        tmax_df = tmax_df.rename(columns={'value': 'tmax'})
-        tmin_df = tmin_df.rename(columns={'value': 'tmin'})
-        prcp_df = prcp_df.rename(columns={'value': 'prcp'})
-        
-        # Merge into a new dataframe with date, station, and measurements
-        daily_data = []
-        
-        # Process TMAX data
-        if not tmax_df.empty:
-            tmax_data = tmax_df[['date', 'station', 'tmax', 'latitude', 'longitude']]
-            daily_data.append(tmax_data)
-            
-        # Process TMIN data
-        if not tmin_df.empty:
-            tmin_data = tmin_df[['date', 'station', 'tmin', 'latitude', 'longitude']]
-            if daily_data:
-                daily_data[0] = pd.merge(daily_data[0], tmin_data, on=['date', 'station', 'latitude', 'longitude'], how='outer')
-            else:
-                daily_data.append(tmin_data)
-                
-        # Process PRCP data
-        if not prcp_df.empty:
-            prcp_data = prcp_df[['date', 'station', 'prcp', 'latitude', 'longitude']]
-            if daily_data:
-                daily_data[0] = pd.merge(daily_data[0], prcp_data, on=['date', 'station', 'latitude', 'longitude'], how='outer')
-            else:
-                daily_data.append(prcp_data)
-        
-        if not daily_data:
-            raise ValueError("No valid temperature or precipitation data found")
-            
-        result_df = daily_data[0]
-        
-        # Add station name
-        result_df['station_name'] = result_df['station'].apply(
-            lambda x: station_coords.get(x, {}).get('name', 'Unknown')
-        )
-        
-        # Extract year, month from date
-        result_df['year'] = result_df['date'].dt.year
-        result_df['month'] = result_df['date'].dt.month
-        
-        # Calculate average temperature
-        result_df['tavg'] = result_df[['tmax', 'tmin']].mean(axis=1, skipna=True)
-        
-        # Convert temperatures from tenths of degrees to degrees
-        if 'tmax' in result_df.columns:
-            result_df['tmax'] = result_df['tmax'] / 10
-        if 'tmin' in result_df.columns:
-            result_df['tmin'] = result_df['tmin'] / 10
-        if 'tavg' in result_df.columns:
-            result_df['tavg'] = result_df['tavg'] / 10
-            
-        # Convert precipitation from tenths of mm to inches
-        if 'prcp' in result_df.columns:
-            result_df['prcp'] = result_df['prcp'] / 10
-        
-        return result_df
-    
-    def aggregate_to_monthly(self, df):
-        """
-        Aggregate data into monthly averages for San Francisco.
-        Since we're focusing on a small area, we'll aggregate by month across all stations.
-        
-        Args:
-            df (pandas.DataFrame): Processed daily data
-            
-        Returns:
-            pandas.DataFrame: Aggregated monthly data
-        """
-        print("Aggregating data into monthly averages...")
-        
-        # Group by month
-        grouped = df.groupby(['year', 'month'])
-        
-        # Calculate aggregates
-        aggregated = grouped.agg({
-            'tmax': lambda x: np.nanmean(x) if 'tmax' in df.columns else np.nan,
-            'tmin': lambda x: np.nanmean(x) if 'tmin' in df.columns else np.nan,
-            'tavg': lambda x: np.nanmean(x) if 'tavg' in df.columns else np.nan,
-            'prcp': lambda x: np.nansum(x) if 'prcp' in df.columns else np.nan,
-            'station': 'nunique',
-            'latitude': 'mean',
-            'longitude': 'mean'
+        # Calculate monthly averages
+        monthly = df_wide.groupby([
+            df_wide['date'].dt.to_period('M'),
+            'latitude',
+            'longitude'
+        ]).agg({
+            'TMAX': 'mean',
+            'TMIN': 'mean',
+            'PRCP': 'sum',  # Monthly total precipitation
+            'AWND': 'mean',  # Average wind speed
+            'WDF2': lambda x: np.rad2deg(np.arctan2(
+                np.mean(np.sin(np.deg2rad(x))),
+                np.mean(np.cos(np.deg2rad(x)))
+            )) % 360  # Circular mean for wind direction
         }).reset_index()
         
-        # Rename station count column
-        aggregated = aggregated.rename(columns={'station': 'station_count'})
+        # Clean up date format
+        monthly['date'] = monthly['date'].astype(str)
         
-        return aggregated
-    
-    def run(self, year=2023):
-        """
-        Run the complete pipeline: fetch, process, aggregate, and save data for San Francisco.
+        # Calculate average temperature
+        monthly['TAVG'] = (monthly['TMAX'] + monthly['TMIN']) / 2
         
-        Args:
-            year (int): Year to fetch data for (default: 2023)
-            
-        Returns:
-            str: Path to saved CSV file
-        """
-        print(f"Fetching NOAA data for San Francisco ({year})...")
+        # Estimate relative humidity based on temperature and precipitation
+        # This is a simplified model that assumes:
+        # 1. Higher precipitation = higher humidity
+        # 2. Higher temperature = lower humidity
+        # 3. Base RH of 60% adjusted by temp and precip
         
-        # Fetch raw data
-        raw_data, station_coords = self.fetch_all_data(year)
+        # Normalize temperature and precipitation to 0-1 scale
+        temp_norm = (monthly['TAVG'] - monthly['TAVG'].min()) / (monthly['TAVG'].max() - monthly['TAVG'].min())
+        precip_norm = (monthly['PRCP'] - monthly['PRCP'].min()) / (monthly['PRCP'].max() - monthly['PRCP'].min())
         
-        # Process data
-        processed_data = self.process_data(raw_data, station_coords)
+        # Calculate estimated RH
+        # Base RH of 60%, increased by precipitation (up to +20%) and decreased by temperature (up to -20%)
+        monthly['RH'] = 60 + (20 * precip_norm) - (20 * temp_norm)
+        monthly['RH'] = monthly['RH'].clip(30, 90)  # Clip to reasonable range for Bay Area
         
-        # Aggregate into monthly averages
-        monthly_data = self.aggregate_to_monthly(processed_data)
+        # Calculate VPD using estimated RH
+        t = monthly['TAVG']
+        rh = monthly['RH']
+        
+        # Calculate saturation vapor pressure
+        svp = 0.61078 * np.exp((17.27 * t) / (t + 237.3))  # in kPa
+        
+        # Calculate actual vapor pressure
+        vp = svp * (rh / 100)
+        
+        # Calculate VPD
+        monthly['VPD'] = svp - vp  # in kPa
+        
+        # Drop intermediate calculation column
+        monthly = monthly.drop('TAVG', axis=1)
         
         # Save to CSV
-        output_path = "data/weather/noaa_sf.csv"
-        monthly_data.to_csv(output_path, index=False)
+        output_file = "data/weather/noaa_ca.csv"
+        monthly.to_csv(output_file, index=False)
+        logger.info(f"Saved monthly weather data to {output_file}")
         
-        print(f"Data successfully saved to {output_path}")
+        # Save metadata
+        metadata = {
+            "date_range": ["2023-01-01", "2023-12-31"],
+            "variables": {
+                "TMAX": "Maximum temperature (Celsius)",
+                "TMIN": "Minimum temperature (Celsius)",
+                "PRCP": "Total precipitation (mm)",
+                "AWND": "Average wind speed (meters/second)",
+                "WDF2": "Wind direction (degrees from north)",
+                "RH": "Estimated relative humidity (%) - derived from temperature and precipitation patterns",
+                "VPD": "Vapor Pressure Deficit (kPa) - calculated from temperature and estimated humidity"
+            },
+            "stations_used": len(stations),
+            "temporal_resolution": "Monthly averages",
+            "notes": [
+                "Wind direction is calculated using circular mean",
+                "Precipitation is monthly total, all other variables are monthly averages",
+                "Wind direction is measured in degrees from north (0° = N, 90° = E, 180° = S, 270° = W)",
+                "Relative humidity is estimated using a simple model based on temperature and precipitation patterns",
+                "VPD indicates the atmospheric moisture demand; higher values = drier conditions",
+                "Note: The humidity estimation is approximate and should be used with caution"
+            ]
+        }
         
-        # Also save daily data for more detailed analysis
-        daily_output_path = "data/weather/noaa_sf_daily.csv"
-        processed_data.to_csv(daily_output_path, index=False)
-        print(f"Daily data saved to {daily_output_path}")
-        
-        return output_path
+        with open("data/weather/noaa_metadata.json", 'w') as f:
+            json.dump(metadata, f, indent=2)
 
-# Example usage
 if __name__ == "__main__":
-    # Replace with your actual NOAA API key
-    api_key = "pEnzQayogxrBBCFXAGoGwbwbdCbpQYZy"
-    
-    fetcher = NOAADataFetcher(api_key)
-    output_file = fetcher.run(year=2023)
-    
-    print(f"Completed! Monthly data saved to {output_file}")
+    try:
+        fetcher = NOAADataFetcher()
+        fetcher.fetch_and_process()
+    except Exception as e:
+        logger.error(f"Error in NOAA data fetching: {str(e)}")
+        raise
